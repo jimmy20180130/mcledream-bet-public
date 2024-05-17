@@ -1,0 +1,54 @@
+{
+    "key": "",
+    "bot_args": {
+        "host": "mcledream.net",
+        "port": "25565",
+        "username": "example@example.com",
+        "auth": "microsoft",
+        "version": "1.20.1"
+    },
+    "bot": {
+        "server": 61,
+        "home": "play"
+    },
+    "discord": {
+        "bot_token": "",
+        "bot_client_id": "",
+        "guild_id": ""
+    },
+    "discord_channels": {
+        "console": "",
+        "command_record": "",
+        "bet_record": "",
+        "status": "",
+        "link": "",
+        "errors": ""
+    },
+    "bet": {
+        "emax": 500,
+        "emin": 0.01,
+        "cmax": 10,
+        "cmin": 1,
+        "eodds": 2,
+        "codds": 1.85,
+        "bet_position": [3069, 112, 5134]
+    },
+    "console": {
+        "mode": 2,
+        "public": false,
+        "chat": false,
+        "region": true,
+        "lottery": false,
+        "facility": false,
+        "trade": false,
+        "system": false,
+        "claim": true
+    },
+    "advertisement": [
+        
+    ],
+    "roles": {
+        "link_role": "member",
+        "tpa": []
+    }
+}

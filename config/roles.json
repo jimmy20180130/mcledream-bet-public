@@ -1,0 +1,34 @@
+{
+    "none": {
+        "name": "無",
+        "daily": 0,
+        "record_settings": {
+            "advanced": false,
+            "others": false,
+            "me": true
+        },
+        "reverse_blacklist": true,
+        "disallowed_commands": [
+            "link",
+            "help",
+            "wallet"
+        ]
+    },
+    "member": {
+        "name": "會員",
+        "discord_id": "1238467407157137509",
+        "daily": 100,
+        "record_settings": {
+            "advanced": false,
+            "others": false,
+            "me": true
+        },
+        "reverse_blacklist": true,
+        "disallowed_commands": [
+            "link",
+            "help",
+            "wallet",
+            "daily"
+        ]
+    }
+}
