@@ -8,7 +8,6 @@
         "version": "1.20.1"
     },
     "bot": {
-        "server": 61,
         "home": "play"
     },
     "discord": {
@@ -27,28 +26,15 @@
     "bet": {
         "emax": 500,
         "emin": 0.01,
-        "cmax": 10,
-        "cmin": 1,
         "eodds": 2,
-        "codds": 1.85,
         "bet_position": [3069, 112, 5134]
-    },
-    "console": {
-        "mode": 2,
-        "public": false,
-        "chat": false,
-        "region": true,
-        "lottery": false,
-        "facility": false,
-        "trade": false,
-        "system": false,
-        "claim": true
     },
     "advertisement": [
         
     ],
     "roles": {
         "link_role": "member",
+        "link_role_dc": "",
         "tpa": []
     }
 }

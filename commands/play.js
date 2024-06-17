@@ -25,8 +25,6 @@ async function executeCommand(bot, playerid, args) {
 
     if (await getPlayerRole(await get_player_uuid(playerid))) {
         if (await canUseCommand(await get_player_uuid(playerid), args.split(' ')[0])) {
-            await chat(bot, `/ts ${config.bot.server}`)
-            await new Promise(resolve => setTimeout(resolve, 5000));
             await chat(bot, `/homes ${config.bot.home}`)
             await new Promise(resolve => setTimeout(resolve, 2000));
             await chat(bot, await process_msg(bot, messages.commands.play.arrived, playerid))

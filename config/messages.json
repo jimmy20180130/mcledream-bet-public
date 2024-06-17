@@ -4,7 +4,7 @@
             "default": "&6&k6&c&l%playerid%&6&k6&r&7 ，&b您好&r&7，&a現在時間為 &3%time% &7。"
         },
         "money": {
-            "default": "&6我目前有 &3&l%emerald% &6個遊戲幣和 &3&l%coin% &6個村民錠"
+            "default": "&6我目前有 &3&l%emerald% &6個遊戲幣"
         },
         "epay": {
             "default": "&6成功支付 &3&l%emerald% &6個遊戲幣給 &c&l%playerid%"

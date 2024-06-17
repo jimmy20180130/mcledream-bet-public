@@ -6,6 +6,7 @@ module.exports = {
 	.setName('設定')
 	.setDescription('機器人設定')
 	.setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+	.setDMPermission(false)
 	.addSubcommand(subcommand =>
 		subcommand
 			.setName('對賭')
@@ -68,42 +69,31 @@ module.exports = {
 
 	.addSubcommandGroup(group => 
 		group
-			.setName('宣傳文')
-			.setDescription('機器人自動宣傳的話')
+			.setName('自動發話')
+			.setDescription('設定機器人自動發話')
 			.addSubcommand(subcommand => 
 				subcommand
-					.setName('交易頻道')
-					.setDescription('在交易頻道自動宣傳的文字')
+					.setName('新增')
+					.setDescription('新增自動發話的文字')
 					.addStringOption(option =>
-						option.setName('宣傳文')
-							.setDescription('在交易頻道自動宣傳的文字')
+						option.setName('文字或指令')
+							.setDescription('自動發話的內容')
+							.setRequired(true)
+					)
+					.addIntegerOption(option =>
+						option.setName('間隔時間')
+							.setDescription('間隔時間 (以毫秒計算)')
+							.setRequired(true)
 					)
 			)
 			.addSubcommand(subcommand =>
 				subcommand
-					.setName('公設頻道') 
-					.setDescription('在公設頻道自動宣傳的文字')
+					.setName('刪除') 
+					.setDescription('刪除自動發話的文字')
 					.addStringOption(option =>
-						option.setName('宣傳文')
-							.setDescription('在公設頻道自動宣傳的文字')
-					)
-			)
-			.addSubcommand(subcommand =>
-				subcommand
-					.setName('抽獎頻道') 
-					.setDescription('在抽獎頻道自動宣傳的文字')
-					.addStringOption(option =>
-						option.setName('宣傳文')
-							.setDescription('在抽獎頻道自動宣傳的文字')
-					)
-			)
-			.addSubcommand(subcommand =>
-				subcommand
-					.setName('領地頻道') 
-					.setDescription('在領地頻道自動宣傳的文字')
-					.addStringOption(option =>
-						option.setName('宣傳文')
-							.setDescription('在領地頻道自動宣傳的文字')
+						option.setName('文字或指令')
+							.setAutocomplete(true)
+							.setDescription('自動發話的內容')
 					)
 			)
 	)
@@ -145,6 +135,14 @@ module.exports = {
 	),
 
 	async execute(interaction) {
+		let user_roles = interaction.member.roles.cache.filter(role => role.name !== '@everyone').map(role => role.id);
+		let roles = JSON.parse(fs.readFileSync(`${process.cwd()}/config/roles.json`, 'utf8'));
+
+		if (!user_roles.some(role => roles[role] && (roles[role].reverse_blacklist == false || !roles[role].disallowed_commands == []))) {
+			await interaction.editReply({ content: '你沒有權限使用這個指令', ephemeral: true });
+			return;
+		}
+
 		let config = JSON.parse(fs.readFileSync(`${process.cwd()}/config/config.json`, 'utf8'));
 		
 		switch (interaction.options.getSubcommand()) {
@@ -214,44 +212,32 @@ module.exports = {
 				await interaction.reply({ content: '設定完成', ephemeral: true });
 				break;
 
-			case '交易頻道':
-				if (!interaction.options.getString('宣傳文')) {
-					config.trade_text = ''
+			case '新增':
+				if (!interaction.options.getString('文字或指令') || !interaction.options.getInteger('間隔時間')) {
+					await interaction.reply({ content: '請輸入文字', ephemeral: true })
+					return
+					
 				} else {
-					config.trade_text = interaction.options.getString('宣傳文');
+					config.advertisement.push({
+						"text":interaction.options.getString('文字或指令'),
+						"interval": interaction.options.getInteger('間隔時間')
+					})
 				}
 				
 				fs.writeFileSync(`${process.cwd()}/config/config.json`, JSON.stringify(config, null, 4));
 				await interaction.reply({ content: '設定完成', ephemeral: true });
 				break;
 
-			case '公設頻道':
-				if (!interaction.options.getString('宣傳文')) {
-					config.facility_text = ''
-				} else {
-					config.facility_text = interaction.options.getString('宣傳文');
-				}
+			case '刪除':
+				if (!interaction.options.getString('文字或指令')) {
+					await interaction.reply({ content: '請輸入文字', ephemeral: true })
+					return
 
-				fs.writeFileSync(`${process.cwd()}/config/config.json`, JSON.stringify(config, null, 4));
-				await interaction.reply({ content: '設定完成', ephemeral: true });
-				break;
-
-			case '抽獎頻道':
-				if (!interaction.options.getString('宣傳文')) {
-					config.lottery_text = ''
 				} else {
-					config.lottery_text = interaction.options.getString('宣傳文');
-				}
-				
-				fs.writeFileSync(`${process.cwd()}/config/config.json`, JSON.stringify(config, null, 4));
-				await interaction.reply({ content: '設定完成', ephemeral: true });
-				break;
-
-			case '領地頻道':
-				if (!interaction.options.getString('宣傳文')) {
-					config.claim_text = ''
-				} else {
-					config.claim_text = interaction.options.getString('宣傳文');
+					let index = config.advertisement.findIndex(x => x.text === interaction.options.getString('文字或指令'));
+					if (index !== -1) {
+						config.advertisement.splice(index, 1);
+					}
 				}
 				
 				fs.writeFileSync(`${process.cwd()}/config/config.json`, JSON.stringify(config, null, 4));

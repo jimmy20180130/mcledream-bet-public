@@ -4,6 +4,7 @@ const {
     add_player_wallet_dc,
     clear_player_wallet_dc
 } = require(`${process.cwd()}/utils/database.js`);
+const fs = require('fs')
 
 const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
 
@@ -73,6 +74,15 @@ module.exports = {
 
     async execute(interaction) {
         await interaction.deferReply({ ephemeral: true });
+
+        let user_roles = interaction.member.roles.cache.filter(role => role.name !== '@everyone').map(role => role.id);
+		let roles = JSON.parse(fs.readFileSync(`${process.cwd()}/config/roles.json`, 'utf8'));
+
+        if (!user_roles.some(role => roles[role] && (roles[role].reverse_blacklist == false || !roles[role].disallowed_commands == []))) {
+			await interaction.editReply({ content: '你沒有權限使用這個指令', ephemeral: true });
+			return;
+		}
+
         const user = interaction.options.getUser('使用者')
         let wallet;
 

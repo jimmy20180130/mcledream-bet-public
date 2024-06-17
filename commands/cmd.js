@@ -18,28 +18,11 @@ module.exports = {
 }
 
 async function executeCommand(bot, playerid, args) {
-    const messages = JSON.parse(fs.readFileSync(`${process.cwd()}/config/messages.json`, 'utf8'));
-
     if (await getPlayerRole(await get_player_uuid(playerid))) {
         if (await canUseCommand(await get_player_uuid(playerid), args.split(' ')[0])) {
-            bot.chat(`/${args.split(' ').slice(1).join(' ')}`)
-            const msg_Promise = bot.awaitMessage(/^(?!\[(閒聊|交易|抽獎|設施|公共|~|系統\] 新玩家|系統\] 吉日|系統\] 凶日|系統\] .*凶日|系統\] .*吉日)).*/);
-            const timeout_Promise = new Promise((resolve) => {
-                setTimeout(() => {
-                    resolve(undefined);
-                }, 10000);
-            });
-            Promise.race([msg_Promise, timeout_Promise]).then(async value => {
-                if (value) {
-                    await chat(bot, `/m ${playerid} ${value}`)
-                } else {
-                    await chat(bot, `/m ${playerid} ${messages.commands.cmd.no_respond}`)
-                }
-            })
+            await chat(bot, `/${args.split(' ').slice(1).join(' ')}`)
+            await chat(bot, `/m ${playerid} 指令 /${args.split(' ').slice(1).join(' ')} 已成功傳送`)
 
-            for (listener of bot.listeners('messagestr')) {
-                bot.removeListener('messagestr', listener);
-            }
         } else {
             await mc_error_handler(bot, 'general', 'no_permission', playerid)
         }

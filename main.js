@@ -54,14 +54,14 @@ const init_bot = async () => {
 
     bot.on('message', async (jsonMsg) => {
         const messages = JSON.parse(fs.readFileSync(`${process.cwd()}/config/messages.json`, 'utf-8'));
-        if (/^\[([A-Za-z0-9_]+) -> 您\] .*/.exec(jsonMsg.toString())) {
+        if (/^✉ \[([^\]]+) -> you\] .*/.exec(jsonMsg.toString())) {
             const msg = jsonMsg.toString()
-            const pattern = /^\[([A-Za-z0-9_]+) -> 您\] .*/;
+            const pattern = /^✉ \[([^\]]+) -> you\] .*/;
             const match = pattern.exec(msg);
             if (match) {
                 let playerid = match[1];
                 if (playerid === bot.username) {return};
-                let args = msg.slice(8 + playerid.length);
+                let args = msg.slice(12 + playerid.length);
                 const commandName = args.split(' ')[0].toLowerCase();
                 for (item of Object.keys(commands)) {
                     if (commands[item].includes(commandName) || item == commandName) {
@@ -69,12 +69,13 @@ const init_bot = async () => {
                             await command_records(client, playerid, args)
                             donate_list.push(playerid)
                             await chat(bot, `/m ${playerid} ${messages.commands.donate.start_donate}`)
-                            const pay_msg_Promise = bot.awaitMessage(/^\[系統\] 您收到了/)
+                            const pay_msg_Promise = bot.awaitMessage(/^\[雷夢經濟\]你收到了從/)
                             const timeout_Promise = new Promise((resolve) => {
                                 setTimeout(() => {
                                     resolve('timeout');
                                 }, 20000);
                             });
+
                             await Promise.race([pay_msg_Promise, timeout_Promise]).then(async string => {
                                 if (string == 'timeout' && donate_list.includes(playerid)) {
                                     await chat(bot, `/m ${playerid} ${messages.commands.donate.donate_timeout}`)
@@ -82,10 +83,8 @@ const init_bot = async () => {
                                     return
                                 } else {
                                     const msg = string;
-                                    const e_regex = /\[系統\] 您收到了\s+(\w+)\s+轉帳的 (\d{1,3}(,\d{3})*)( 綠寶石 \(目前擁有 (\d{1,3}(,\d{3})*)) 綠寶石\)/;
-                                    const c_regex = /\[系統\] 您收到了 (\S+) 送來的 (\d{1,3}(,\d{3})*) 村民錠\. \(目前擁有 (\d{1,3}(,\d{3})*) 村民錠\)/
+                                    const e_regex = /\[雷夢經濟\]你收到了從\s+(\w+)\s+轉來的\s+(\d+\.\d+)\s+\$/
                                     const ematch = e_regex.exec(msg);
-                                    const cmatch = c_regex.exec(msg);
 
                                     if (ematch) {
                                         let playeridd = ematch[1];
@@ -97,18 +96,6 @@ const init_bot = async () => {
                                             let amount = parseInt(ematch[2].split(',').join(''))
                                             if (playeridd === bot.username) {return};
                                             await chat(bot, `/m ${playerid} ${messages.commands.donate.donate_e_success.replaceAll('%amount%', amount)}`)
-                                            donate_list.shift()
-                                        }
-                                    } else if (cmatch) {
-                                        let playeridd = cmatch[1];
-                                        if (!donate_list.includes(playeridd)) {
-                                            await chat(bot, `/m ${playerid} ${messages.commands.donate.wait_until_no_ppl}`)
-                                            donate_list.shift()
-                                            return
-                                        } else {
-                                            let amount = parseInt(cmatch[2].split(',').join(''))
-                                            if (playeridd === bot.username) {return};
-                                            await chat(bot, `/m ${playerid} ${messages.commands.donate.donate_c_success.replaceAll('%amount%', amount)}`)
                                             donate_list.shift()
                                         }
                                     }
@@ -152,18 +139,16 @@ const init_bot = async () => {
                     }
                 }
             }
-        } else if (jsonMsg.toString().startsWith(`[系統] 您收到了 `)) {
+        } else if (jsonMsg.toString().startsWith(`[雷夢經濟]你收到了從`)) {
             const msg = jsonMsg.toString();
-            const e_regex = /\[系統\] 您收到了\s+(\w+)\s+轉帳的 (\d{1,3}(,\d{3})*)( 綠寶石 \(目前擁有 (\d{1,3}(,\d{3})*)) 綠寶石\)/;
-            const c_regex = /\[系統\] 您收到了 (\S+) 送來的 (\d{1,3}(,\d{3})*) 村民錠\. \(目前擁有 (\d{1,3}(,\d{3})*) 村民錠\)/
+            const e_regex = /\[雷夢經濟\]你收到了從\s+(\w+)\s+轉來的\s+([\d,]+\.\d+)\s+\$/
             const ematch = e_regex.exec(msg);
-            const cmatch = c_regex.exec(msg);
 
             if (ematch) {
-                let config = JSON.parse(fs.readFileSync(`${process.cwd()}/config/config.json`, 'utf8'));
+                console.log(ematch[1], ematch[2])
                 let playerid = ematch[1];
                 if (donate_list.includes(playerid)) return
-                let amount = parseInt(ematch[2].split(',').join(''))
+                let amount = parseFloat(ematch[2].split(',').join(''))
 
                 if (playerid === bot.username) {return};
                 if (amount > config.bet.emax || amount < config.bet.emin) {
@@ -173,63 +158,20 @@ const init_bot = async () => {
                 }
 
                 await add_bet_task(bot, playerid, amount, 'emerald');
-
-            } else if (cmatch) {
-                let config = JSON.parse(fs.readFileSync(`${process.cwd()}/config/config.json`, 'utf8'));
-                let playerid = cmatch[1];
-                if (donate_list.includes(playerid)) return
-                let amount = parseInt(cmatch[2].split(',').join(''))
-
-                if (playerid === bot.username) {return};
-                if (amount > config.bet.cmax || amount < config.bet.cmin) {
-                    await chat(bot, `/m ${playerid} ${messages.errors.bet.c_over_limit.replaceAll('%cmin%', config.bet.cmin).replaceAll('%cmax%', config.bet.cmax)}`);
-                    await chat(bot, `/cointrans ${playerid} ${amount}`)
-                    await chat(bot, playerid)
-                    return
-                }
-
-                await add_bet_task(bot, playerid, amount, 'coin');
             }
-        } else if (jsonMsg.toString().startsWith(`[系統] `) && jsonMsg.toString().toLowerCase().includes(`想要你傳送到 該玩家 的位置`) || jsonMsg.toString().toLowerCase().includes(`想要傳送到 你 的位置`)) {
+
+        } else if (jsonMsg.toString().toLowerCase().endsWith(' 想傳送至您身邊[同意]') || jsonMsg.toString().toLowerCase().endsWith(' 想傳送您到他身邊[同意]')) {
             //將字串以空格切開，例如 '1 2 3' => [1, 2, 3]
             let msg = jsonMsg.toString().split(" ")
             //取得玩家 id (訊息切開的第一個，例如 [1, 2, 3] => 2)
             let playerid = msg[1]
-            //判斷玩家是否在白名單內，是的話就說 /tok ，否的話 /tno
-            
-            if (config.roles.tpa.includes(playerid) || config .roles.tpa.includes(playerid.toLowerCase())) {
-                await chat(bot, '/tok')
-            } else {
-                await chat(bot, '/tno')
-            }
+            //判斷玩家是否為 xiaoxi_yt ，是的話就說 /tpa
+            if (config.roles.tpa.includes(playerid.toLowerCase()) || config.roles.tpa.includes(playerid)) await chat(bot, '/tpa')
         }
     });
 
+
     bot.on('message', async function (jsonMsg) {
-        const textMessage = jsonMsg.toString()
-        const config = JSON.parse(fs.readFileSync(`${process.cwd()}/config/config.json`, 'utf8'));
-        const shouldSkipMessage = (textMessage) => {
-            if (!config.console.public && /^\[公共\]/.test(textMessage) || /^\[\!\]/.test(textMessage)) return true;
-            if (!config.console.trade && /^\[交易\]/.test(textMessage) || /^\[\$\]/.test(textMessage)) return true;
-            if (!config.console.chat && /^\[閒聊\]/.test(textMessage) || /^\[\@\]/.test(textMessage)) return true;
-            if (!config.console.lottery && /^\[抽獎\]/.test(textMessage) || /^\[\%\]/.test(textMessage)) return true;
-            if (!config.console.region && /^\[區域\]/.test(textMessage)) return true;
-            if (!config.console.facility && /^\[設施\]/.test(textMessage) || /^\[\!\]/.test(textMessage) || /^\[\*\]/.test(textMessage)) return true;
-            if (!config.console.claim && /^\[領地\]/.test(textMessage)) return true;
-            if (config.lottery_text && config.lottery_text != "" && textMessage.includes(config.lottery_text.replaceAll(/&[0-9a-f]/gi, ''))) return true
-            if (config.trade_text && config.trade_text != "" && textMessage.includes(config.trade_text.replaceAll(/&[0-9a-f]/gi, ''))) return true
-            if (config.facility_text && config.facility_text != "" && textMessage.includes(config.facility_text.replaceAll(/&[0-9a-f]/gi, ''))) return true
-            if (config.claim_text && config.claim_text != "" && textMessage.includes(config.claim_text.replaceAll(/&[0-9a-f]/gi, ''))) return true
-
-            if (!config.console.system) {
-                if (/^(?:\[系統\] (?:新玩家|吉日|凶日|.*凶日|.*吉日)|\>|\[系統\] .*提供了 小幫手提示|\[系統\] 您的訊息沒有玩家看見|┌─回覆自|.* (?:has made the advancement|has completed the challenge|has reached the goal)|players sleeping|目標生命 \: ❤❤❤❤❤❤❤❤❤❤ \/ ([\S]+)|^\[\?]|^\=\=|\[>\]|\[~\])/.test(textMessage)) return true
-            }
-
-            return false;
-        };
-
-        if (shouldSkipMessage(textMessage)) return
-        
         console.log(jsonMsg.toAnsi())
         add_msg(jsonMsg.json)
     });
@@ -265,6 +207,8 @@ const init_bot = async () => {
                         let cache_bet = cache.bet
                 
                         for (const item of cache_bet) {
+                            if (item.added == true) continue
+                            
                             const playerid = item.player_id
                             const amount = item.amount
                             const type = item.type
@@ -626,6 +570,74 @@ const init_dc = () => {
             } else if (interaction.customId.startsWith('giveaway_total')) {}
         })
 
+        //auto complete
+        client.on(Events.InteractionCreate, async interaction => {
+            if (!interaction.isAutocomplete()) return
+
+            let focused_value = ''
+            let result = []
+            let results = []
+
+            switch (interaction.commandName) {
+                case 'record':
+                    try {
+                        const players = await get_all_user()
+                        let roles = JSON.parse(fs.readFileSync(`${process.cwd()}/config/roles.json`, 'utf8'));
+
+                        if (players == 'Not Found' || players == 'error' || players == undefined) {
+                            await interaction.respond([{ name: '找不到玩家資料', value: '找不到玩家資料' }])
+                            return
+                        }
+
+                        if (roles[(await get_user_data_from_dc(interaction.member.id))[0].roles.split(', ')[0]].record_settings.others) {
+                            results.push({
+                                name: '所有人',
+                                value: '所有人'
+                            })
+                        }
+
+                        console.log(roles[(await get_user_data_from_dc(interaction.member.id))[0].roles.split(', ')[0]])
+
+                        focused_value = interaction.options.getFocused().toLowerCase()
+                        result = players.filter(player => player.toLowerCase().startsWith(focused_value))
+                        
+                        results.push(...result.map(player => {
+                            return {
+                                name: player,
+                                value: player
+                            }   
+                        }))
+
+                        interaction.respond(results.slice(0, 25)).catch((e) => {console.log(e)})
+                    } catch (e) {
+                        console.log(e)
+                        interaction.respond([{ name: '查詢玩家資料時發生錯誤', value: '查詢玩家資料時發生錯誤' }]).catch(() => {})
+                    }
+
+                    break
+
+                case '設定':
+                    const config = JSON.parse(fs.readFileSync(`${process.cwd()}/config/config.json`, 'utf8'));
+
+                    focused_value = interaction.options.getFocused()
+                    result = config.advertisement.filter(ad => ad.text.startsWith(focused_value))
+                    
+                    if (focused_value == '') {
+                        result = config.advertisement
+                    }
+
+                    results = result.map(ad => {
+                        return {
+                            name: ad.text.slice(0, 25),
+                            value: ad.text.slice(0, 25)
+                        }
+                    })
+
+                    interaction.respond(results.slice(0, 25)).catch(() => {})
+                    break
+            }
+        })  
+
         auto_ckeck_giveaway = setInterval(async () => {
             let giveaways = JSON.parse(fs.readFileSync(`${process.cwd()}/data/giveaways.json`, 'utf-8'));
             
@@ -729,6 +741,8 @@ const init_dc = () => {
 
             fs.writeFileSync(`${process.cwd()}/config/roles.json`, JSON.stringify(roles, null, 4));
 
+            if (config.roles.link_role_dc == '' || !config.roles.link_role_dc) return
+
             let link_role_name = await client.guilds.cache.get(config.discord.guild_id).roles.cache.get(config.roles.link_role_dc).name
 
             if (link_role_name != config.roles.link_role) {
@@ -756,6 +770,8 @@ const init_dc = () => {
             }
 
             if (client) {
+                if (config.discord.guild_id == '' || !config.discord.guild_id) return
+                
                 const guild = await client.guilds.cache.get(config.discord.guild_id);
                 //get members from a guild
                 const members = await guild.members.fetch().then(member => {

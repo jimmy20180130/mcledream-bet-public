@@ -1,9 +1,7 @@
 const sqlite3 = require('sqlite3').verbose();
 const { generateUUID } = require(`${process.cwd()}/utils/uuid.js`)
 const { get_player_name } = require(`${process.cwd()}/utils/get_player_info.js`)
-const { rejects } = require('assert');
 const fs = require('fs');
-const { resolve } = require('path');
 const { initDB, closeDB, executeQuery } = require(`${process.cwd()}/utils/db_write.js`);
 
 async function remove_user_role(discord_id, role) {
@@ -96,7 +94,9 @@ async function add_user_role(discord_id, role) {
         } else {
             const existing_roles = rows[0].roles.split(', ');
             if (!existing_roles.includes(role)) {
-                let new_roles = [...existing_roles, role].filter(r => r !== 'none').filter((r, i) => new_roles.indexOf(r) === i).sort().join(', ');
+                let new_roles = [...existing_roles, role].filter(r => r !== 'none')
+                new_roles = new_roles.filter((r, i) => new_roles.indexOf(r) === i).sort().join(', ');
+                console.log(new_roles)
                 
                 await new Promise((resolve, reject) => {
                     executeQuery('user_data', updateSql, [new_roles, discord_id], (err) => {
@@ -411,11 +411,11 @@ async function clear_player_wallet_dc(discord_id) {
     })
 }
 
-async function write_pay_history(amount, win, odds, status, player_uuid, bet_type) {
+async function write_pay_history(amount, win, odds, status, player_uuid, bet_type, uuid) {
     const insertSql = 'INSERT INTO pay_history (amount, win, odds, time, status, player_uuid, pay_uuid, bet_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
 
     await new Promise(resolve => {
-        executeQuery('pay_history', insertSql, [amount, win, odds, Math.round(new Date() / 1000), status, player_uuid, generateUUID(), bet_type], (err, rows) => {
+        executeQuery('pay_history', insertSql, [amount, win, odds, Math.round(new Date() / 1000), status, player_uuid, uuid, bet_type], (err, rows) => {
             if (err) {
                 console.log(err)
 
@@ -480,6 +480,8 @@ async function write_errors(amount, win, odds, status, player_uuid, bet_type) {
                 console.log(err)
 
             }
+
+            resolve()
         })
     })
 }
@@ -583,7 +585,8 @@ async function get_all_user() {
     let players = []
 
     let rows = await new Promise(resolve => {
-        executeQuery('pay_history', 'SELECT player_id FROM pay_history', [], (err, row) => {
+        const selectSql = 'SELECT realname FROM user'
+        executeQuery('user_data', selectSql, [], (err, row) => {
             if (err) {
                 console.error(err);
                 resolve('error');
@@ -594,6 +597,32 @@ async function get_all_user() {
             }
         })
     })
+
+    for (let player of rows) {
+        players.push(player.realname)
+    }
+
+    return players
+}
+
+async function remove_user_discord_id(discord_id) {
+    // set user's discord to 0
+
+    const updateSql = 'UPDATE user SET discord_id = 0 WHERE discord_id = ?';
+
+    try {
+        await new Promise((resolve, reject) => {
+            executeQuery('user_data', updateSql, [discord_id], (err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+    } catch (err) {
+        console.error(err);
+    }
 }
 
 module.exports = {
@@ -618,5 +647,7 @@ module.exports = {
     clear_player_wallet_dc,
     get_all_user_data,
     set_user_role,
-    delete_user_data
+    delete_user_data,
+    remove_user_discord_id,
+    get_all_user
 };

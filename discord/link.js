@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { get_pay_history, getPlayerRole, get_user_data, delete_user_data } = require(`${process.cwd()}/utils/database.js`);
+const { delete_user_data, get_user_data_from_dc } = require(`${process.cwd()}/utils/database.js`);
 const { validate_code } = require(`${process.cwd()}/utils/link_handler.js`);
-const { get_player_uuid, get_player_name } = require(`${process.cwd()}/utils/get_player_info.js`);
+const { get_player_name } = require(`${process.cwd()}/utils/get_player_info.js`);
 const { link_embed } = require(`${process.cwd()}/discord/embed.js`);
 const fs = require('fs')
 
@@ -9,6 +9,7 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('綁定')
 		.setDescription('綁定您的 Minecraft 帳號')
+		.setDMPermission(false)
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('link')
@@ -80,8 +81,10 @@ module.exports = {
 
 					if (config.link_role == 'default') return
 
-					const role = await interaction.guild.roles.fetch(roles[config.roles.link_role].discord_id);
-					await interaction.member.roles.add(role);
+					try {
+						const role = await interaction.guild.roles.fetch(roles[config.roles.link_role_dc].discord_id);
+						await interaction.member.roles.add(role);
+					} catch (error) {}
 				} else if (verify_success == 'already_linked') {
 					await interaction.editReply('您的 Discord 帳號已經綁定過了');
 				} else {
@@ -113,9 +116,9 @@ module.exports = {
 
 				collector.on('collect', async (interaction) => {
 					if (interaction.customId === 'confirm') {
-						await interaction.update({ content: '已確認操作', components: [] });
+						await interaction.update({ content: '已確認操作', components: [], embeds: [] });
 
-						const player_uuid = await get_player_uuid(interaction.member.id);
+						const player_uuid = (await get_user_data_from_dc(interaction.member.id))[0].player_uuid
 						await delete_user_data(player_uuid);
 
 					} else {

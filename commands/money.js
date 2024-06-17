@@ -24,11 +24,9 @@ async function executeCommand(bot, playerid, args) {
 
     if (await getPlayerRole(await get_player_uuid(playerid))) {
         if (await canUseCommand(await get_player_uuid(playerid), args.split(' ')[0])) {
-            const emeraldRegex = /綠寶石餘額 : (\d[\d,]*)/;
-            const coinRegex = /村民錠餘額 : (\d[\d,]*)/;
+            const emeraldRegex = /遊戲幣: (\d[\d,]*)/;
             const emerald = bot.tablist.header.toString().match(emeraldRegex)[1].replaceAll(',', '');
-            const coin = bot.tablist.header.toString().match(coinRegex)[1].replaceAll(',', '');
-            await chat(bot, `/m ${playerid} ${await process_msg(bot, messages.commands.money['default'].replaceAll("%emerald%", emerald).replaceAll("%coin%", coin), playerid)}`)
+            await chat(bot, `/m ${playerid} ${await process_msg(bot, messages.commands.money['default'].replaceAll("%emerald%", emerald), playerid)}`)
         } else {
             await mc_error_handler(bot, 'general', 'no_permission', playerid)
         }
