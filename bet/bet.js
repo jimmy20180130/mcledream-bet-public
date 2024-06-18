@@ -39,8 +39,8 @@ async function add_bet_task(bot, player_id, amount, type) {
     })
 
     fs.writeFileSync(`${process.cwd()}/cache/cache.json`, JSON.stringify(cache, null, 4))
-
-    console.log(`[INFO] 收到下注任務 (${pay_uuid}): ${task.player_id} 下注 ${task.amount} 個 ${task.type} ，時間為 ${create_time}`)
+    
+    console.log(`[INFO] 收到下注任務 (${pay_uuid}): ${player_id} 下注 ${String(amount)} 個 ${type} ，時間為 ${create_time}`)
 }
 
 async function process_bet_task() {
@@ -52,7 +52,7 @@ async function process_bet_task() {
             const emeraldRegex = /遊戲幣: (\d[\d,]*)/;
             let task = bet_task.shift();
             task_uuid = task.uuid
-
+            
             const emerald = bot.tablist.header.toString().match(emeraldRegex)[1].replaceAll(',', '');
 
             if (task.type == 'emerald' && emerald < task.amount*config.bet.eodds) {
@@ -62,6 +62,8 @@ async function process_bet_task() {
                 let cache = JSON.parse(fs.readFileSync(`${process.cwd()}/cache/cache.json`, 'utf8'))
                 cache.bet.shift()
                 fs.writeFileSync(`${process.cwd()}/cache/cache.json`, JSON.stringify(cache, null, 4))
+
+                console.log(`[INFO] 下注任務 (${task.uuid}) 超過上限，歸還玩家 ${task.player_id}  ${task.amount} 個 遊戲幣`)
                 resolve()
             } else {
                 if (task.player_id == undefined || task.amount == undefined || task.type == undefined) {
@@ -127,6 +129,7 @@ async function active_redstone(bot, playerid, amount, type, task_uuid) {
 
     try {
         let position = config.bet.bet_position
+        
         if (position == undefined || position.length != 3) {
             position = undefined
         }

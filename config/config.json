@@ -32,6 +32,9 @@
     "advertisement": [
         
     ],
+    "console": {
+        "mode": 2
+    },
     "roles": {
         "link_role": "member",
         "link_role_dc": "",
